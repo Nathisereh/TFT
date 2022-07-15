@@ -1,0 +1,120 @@
+import RPi.GPIO as IO
+from time import sleep 
+import parallel
+LCD_WR = 15
+LCD_RD = 14
+LCD_CS = 27
+LCD_RS = 4
+LCD_RST = 17
+LCD_D0 = 9
+LCD_D1 = 11
+LCD_D2 = 18
+LCD_D3 = 23
+LCD_D4 = 24
+LCD_D5 = 25
+LCD_D6 = 8
+LCD_D7 = 7
+IO.setmode(IO.BCM)
+IO.setup(LCD_CS, IO.OUT)
+IO.setup(LCD_RD, IO.OUT)
+IO.setup(LCD_RS, IO.OUT)
+IO.setup(LCD_WR, IO.OUT)
+IO.setup(LCD_RST, IO.OUT)
+p = parallel.Parallel()
+def LCD_write(d):
+    IO.output(LCD_WR, LOW) # WR 0
+
+    PORTD = (PORTD & p.setData(0x03)) | (p.setData(0xFC))
+    PORTB = (PORTB & p.setData(0x03)) | (p.setData(0x03))
+
+    IO.output(LCD_WR, HIGH) # WR 1
+
+def LCD_command_write(command):
+    IO.output(LCD_RS, LOW)
+    LCD_write(command)
+
+def LCD_data_write(data):
+    IO.output(LCD_RS, HIGH)
+    LCD_write(data)
+
+def Lcd_Init():
+    IO.output(LCD_RST, HIGH)
+    sleep(5)
+    IO.output(LCD_RST, LOW)
+    sleep(15)
+    IO.output(LCD_RST, HIGH)
+    sleep(15)
+
+
+    IO.output(LCD_CS, HIGH) #Chip-Select Active Low Signal
+    IO.output(LCD_WR, HIGH)
+    IO.output(LCD_RD, HIGH)
+    IO.output(LCD_CS, LOW) #Chip-Select Active Low Signal
+
+    LCD_command_write(0xC5) #Colour Contrast
+    LCD_data_write(0x54) 
+    LCD_data_write(0x00) 
+
+    LCD_command_write(0x36) #Memory Access Control 
+    LCD_data_write(B0000100) #Example
+
+    LCD_command_write(0x3A) #COLMOD: Pixel Format Set 
+    LCD_data_write(0x55) #16 Bit RGB and MCU
+
+    LCD_command_write(0x11) #Sleep Out 
+    sleep(10)
+    LCD_command_write(0x29) #Display on.
+
+    LCD_command_write(0x2c) #Memory Write
+def Address_set(y1, y2, x1, x2):
+    LCD_command_write(0x2a) #Column Address Set 
+    LCD_data_write(byte(y1 >> 8)) #8 Bit Shift Right of y1
+    LCD_data_write(byte(y1)) #Value of y1
+    LCD_data_write(byte(y2 >> 8)) #8 Bit Shift Right of y2
+    LCD_data_write(byte(y2)) #Value of y2
+
+    LCD_command_write(0x2b) #Page Address Set 
+    LCD_data_write(byte(x1 >> 8)) #8 Bit Shift Right of x1
+    LCD_data_write(byte(x1)) #Value of x1
+    LCD_data_write(byte(x2 >> 8)) #8 Bit Shift Right of x2
+    LCD_data_write(byte(x2)) #Value of x2
+
+    LCD_command_write(0x2c) # REG 2Ch = Memory Write
+
+def drawPixel(x, y, color):
+    IO.output(A3, LOW) # Chip Select active
+    Address_set(y, short(y + 1), x, short(x + 1))
+    #LCD_command_write(0x2C)
+    LCD_data_write(byte(color >> 8))
+    LCD_data_write(byte(color))
+
+def setup():
+    # Setting Pin 2-7 as Output, DDR is PinMode Command, Pin0,1 Untouched
+    DDRD = DDRD | B11111100
+    # Setting Pin 8-9 as Output
+    DDRB = DDRB | B00000011
+    #Setting Analog Pins A4-A0 as Output
+    DDRC = DDRC | B00011111
+    #Setting Analog Pins A4-A0 as HIGH
+    #PORTC = PORTC | B00011111
+    Lcd_Init()
+    Serial.begin(9600)
+
+def loop():
+    for i in range(50, 300):
+        drawPixel(i, 60, DefineConstants.WHITE)
+        drawPixel(i, 70, DefineConstants.WHITE)
+        drawPixel(i, 80, DefineConstants.WHITE)
+        drawPixel(i, 90, DefineConstants.WHITE)
+        drawPixel(i, 100, DefineConstants.WHITE)
+        drawPixel(i, 110, DefineConstants.WHITE)
+        drawPixel(i, 120, DefineConstants.WHITE)
+        drawPixel(i, 130, DefineConstants.WHITE)
+        drawPixel(i, 140, DefineConstants.WHITE)
+        drawPixel(i, 150, DefineConstants.WHITE)
+        delay(200)
+
+class DefineConstants:
+    WHITE = 0xFFFF
+    RED = 0XF800
+    ORANGE = 0xFBE0
